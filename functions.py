@@ -9,13 +9,96 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
 
-def relu(x, b):
-    y = x*b
+def normalize(array):
+    """ 
+    Normalize array to [0, 1]
+    Args:
+      array (ndarray): 2D array of values to be transformed
+    Return:
+      ndarray: transformed values
+    """
+  minimum = np.nanmin(array)
+  maximum = np.nanmax(array)
+  y = maximum - array/(maximum - minimum)
+  return(y)
+
+def relu(array, b):
+    """ 
+    Perform rectified linear unit transformation on array
+    Args:
+      b (int): slope parameter of linear rescaling
+    Return:
+      ndarray: transformed values
+    """
+    y = array*b
     return np.where(y>1, 1, y)
         
-def sigmoid(x, x0, k):
-    y = 1/(1 + np.exp(-k*(x - x0)))
+def sigmoid(array, x0, b):
+    """Sigmoid function
+
+    Args:
+      array (ndarray): 2D array of values to be transformed
+      x0 (int): inflection point
+      b (int): scale parameter
+
+    Returns:
+      ndarray: image containing transformed values
+    """
+    y = 1/(1 + np.exp(-b*(array - x0)))
     return(y) 
+
+def logarithmic(array, b):
+  """Log-like function bounded [0,1]
+
+  1-exp(-3*x)
+
+  Args:
+    array (ndarray): 2D array of values to be transformed
+    b (int): scale parameter
+
+  Returns:
+    ndarray: log transformed values
+  """  
+  y = 1 - np.exp(-b*array)
+  return(y)
+
+def exponential(array, b):
+  """Exponential function bounded 
+
+  Args:
+    array (ndarray): 2D array of values to be transformed
+    b (int): scale parameter
+
+  Returns:
+    ndarray: exponentially transformed values
+  """  
+  y = array**b 
+  return(y)
+
+    
+def block(raster, weight, mode):
+  if(mode == 'Linear'):
+      out = relu(raster, weight)
+  elif(mode == 'Exponential'):
+      out = raster.pow(weight)
+  elif(mode == 'Sigmoid'):
+      out = sigmoid(raster, 0.5, weight*10)
+  elif(mode == 'Logarithmic'):
+      out = logarithmic(raster, weight)
+  else:
+      out = raster
+  return out
+
+class rasterCalculator:
+  def __init__(self, rasters, modes, weights):
+    self.rasters = rasters
+    self.modes = modes
+    self.weights = weights
+    self.n = len(rasters)
+
+  def calculate(self):
+    combined = sum([block(self.rasters[x], self.weights[x], self.modes[x]) for x in range(self.n)])
+    return combined
 
 def plot_grid(suit, conn):
     df = [[x,y] for x in np.arange(0, 1.01, 0.01) for y in np.arange(0, 1.01, 0.01)]
